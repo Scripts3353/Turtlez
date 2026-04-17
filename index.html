@@ -1,1327 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AstraOS</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #080810;
-    --surface: #0e0e1a;
-    --surface2: #14141f;
-    --surface3: #1c1c2e;
-    --border: rgba(255,255,255,0.06);
-    --border2: rgba(255,255,255,0.12);
-    --accent: #6c63ff;
-    --accent2: #9d75ff;
-    --accent-glow: rgba(108, 99, 255, 0.25);
-    --text: #e8e8f0;
-    --text2: rgba(232,232,240,0.5);
-    --text3: rgba(232,232,240,0.25);
-    --red: #ff5f57;
-    --yellow: #febc2e;
-    --green: #28c840;
-  }
-
-  * { margin:0; padding:0; box-sizing:border-box; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    overflow: hidden;
-    height: 100vh;
-    width: 100vw;
-    user-select: none;
-  }
-
-  /* ===== STARTUP SCREEN ===== */
-  #startup {
-    position: fixed; inset: 0; z-index: 99999;
-    background: #000;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 48px;
-  }
-
-  .startup-logo {
-    display: flex; flex-direction: column; align-items: center; gap: 20px;
-  }
-
-  .startup-glyph {
-    width: 72px; height: 72px;
-    position: relative;
-  }
-
-  .startup-glyph svg {
-    width: 100%; height: 100%;
-  }
-
-  .startup-wordmark {
-    font-family: 'DM Mono', monospace;
-    font-weight: 300;
-    font-size: 13px;
-    letter-spacing: 0.5em;
-    color: rgba(255,255,255,0.35);
-    text-transform: uppercase;
-  }
-
-  .startup-bar-wrap {
-    width: 180px;
-    height: 1px;
-    background: rgba(255,255,255,0.08);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .startup-bar {
-    position: absolute; inset-y: 0; left: -100%;
-    width: 100%; background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    animation: startupLoad 1.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
-  }
-
-  @keyframes startupLoad {
-    0% { left: -100%; }
-    100% { left: 100%; }
-  }
-
-  .startup-status {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: rgba(255,255,255,0.2);
-    letter-spacing: 0.1em;
-    animation: fadeStatus 1.8s ease 0.4s forwards;
-    opacity: 0;
-  }
-
-  @keyframes fadeStatus {
-    0% { opacity: 0; }
-    20% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { opacity: 0; }
-  }
-
-  #startup.fade-out {
-    animation: startupFadeOut 0.6s ease forwards;
-  }
-
-  @keyframes startupFadeOut {
-    to { opacity: 0; pointer-events: none; }
-  }
-
-  /* ===== DESKTOP ===== */
-  #desktop {
-    width: 100vw; height: 100vh;
-    position: relative; overflow: hidden;
-    opacity: 0;
-    transition: opacity 0.8s ease;
-  }
-
-  #desktop.visible { opacity: 1; }
-
-  .desktop-bg {
-    position: absolute; inset: 0;
-    background: 
-      radial-gradient(ellipse 80% 60% at 20% 0%, rgba(108,99,255,0.12) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(157,117,255,0.08) 0%, transparent 50%),
-      var(--bg);
-  }
-
-  .desktop-bg::after {
-    content: '';
-    position: absolute; inset: 0;
-    background-image: 
-      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-    background-size: 40px 40px;
-    mask-image: radial-gradient(ellipse at 50% 50%, black 20%, transparent 80%);
-  }
-
-  /* ===== DOCK ICONS ===== */
-  .desktop-icons {
-    position: absolute; left: 32px; top: 32px;
-    display: flex; flex-direction: column; gap: 8px;
-    z-index: 10;
-  }
-
-  .desk-icon {
-    width: 52px; height: 52px;
-    border-radius: 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-  }
-
-  .desk-icon:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: var(--border2);
-    transform: scale(1.08);
-  }
-
-  .desk-icon:active { transform: scale(0.94); }
-
-  .desk-icon svg { width: 22px; height: 22px; stroke: var(--text2); fill: none; stroke-width: 1.5; }
-  .desk-icon:hover svg { stroke: var(--text); }
-
-  .desk-icon-label {
-    position: absolute; left: calc(100% + 10px);
-    background: var(--surface3);
-    border: 1px solid var(--border2);
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 11px;
-    color: var(--text);
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transform: translateX(-4px);
-    transition: all 0.15s ease;
-  }
-
-  .desk-icon:hover .desk-icon-label { opacity: 1; transform: translateX(0); }
-
-  /* ===== TASKBAR ===== */
-  #taskbar {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    height: 44px; z-index: 5000;
-    background: rgba(8,8,16,0.85);
-    backdrop-filter: blur(24px);
-    border-top: 1px solid var(--border);
-    display: flex; align-items: center;
-    padding: 0 16px;
-    gap: 8px;
-  }
-
-  .start-btn {
-    height: 28px; padding: 0 14px;
-    background: var(--surface3);
-    border: 1px solid var(--border2);
-    border-radius: 7px;
-    cursor: pointer;
-    display: flex; align-items: center; gap: 8px;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    color: var(--text2);
-    transition: all 0.15s ease;
-  }
-
-  .start-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--accent); }
-
-  .start-btn-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 6px var(--accent);
-  }
-
-  .taskbar-sep {
-    width: 1px; height: 20px;
-    background: var(--border);
-    margin: 0 4px;
-  }
-
-  .tb-quick {
-    width: 30px; height: 28px;
-    border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .tb-quick:hover { background: var(--surface3); }
-  .tb-quick svg { width: 14px; height: 14px; stroke: var(--text2); fill: none; stroke-width: 1.5; }
-
-  .tb-spacer { flex: 1; }
-
-  .tb-tray {
-    display: flex; align-items: center; gap: 16px;
-    font-size: 11px; color: var(--text3);
-    font-family: 'DM Mono', monospace;
-  }
-
-  .tb-clock { color: var(--text2); }
-
-  .tb-user {
-    display: flex; align-items: center; gap: 6px;
-    padding: 2px 8px; border-radius: 6px;
-    background: var(--surface3); border: 1px solid var(--border);
-    cursor: pointer;
-  }
-
-  .tb-avatar {
-    width: 18px; height: 18px; border-radius: 4px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 9px; font-weight: 500; color: #fff;
-    font-family: 'DM Sans', sans-serif;
-  }
-
-  /* ===== START MENU ===== */
-  #start-menu {
-    position: fixed; bottom: 52px; left: 16px;
-    width: 340px;
-    background: rgba(14,14,26,0.95);
-    backdrop-filter: blur(40px);
-    border: 1px solid var(--border2);
-    border-radius: 16px;
-    padding: 20px;
-    z-index: 9999;
-    display: none;
-    flex-direction: column; gap: 16px;
-    box-shadow: 0 32px 64px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.04);
-    animation: menuPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  @keyframes menuPop {
-    from { transform: translateY(8px) scale(0.97); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
-  }
-
-  .menu-header {
-    display: flex; align-items: center; gap: 12px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .menu-logo-mark {
-    width: 36px; height: 36px; border-radius: 10px;
-    background: var(--surface3);
-    border: 1px solid var(--border2);
-    display: flex; align-items: center; justify-content: center;
-  }
-
-  .menu-logo-mark svg { width: 18px; height: 18px; }
-
-  .menu-title { font-size: 14px; font-weight: 500; }
-  .menu-sub { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
-
-  .menu-apps {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
-  }
-
-  .menu-app {
-    padding: 12px 8px; border-radius: 10px;
-    background: var(--surface2); border: 1px solid var(--border);
-    cursor: pointer; text-align: center;
-    transition: all 0.15s ease;
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-  }
-
-  .menu-app:hover { background: var(--surface3); border-color: var(--border2); }
-  .menu-app svg { width: 20px; height: 20px; stroke: var(--text2); fill: none; stroke-width: 1.5; }
-  .menu-app span { font-size: 11px; color: var(--text2); }
-  .menu-app:hover span { color: var(--text); }
-
-  .menu-label {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
-    color: var(--text3); font-family: 'DM Mono', monospace;
-    padding: 4px 0;
-  }
-
-  .menu-recent { display: flex; flex-direction: column; gap: 2px; }
-
-  .menu-recent-item {
-    padding: 8px 10px; border-radius: 8px;
-    display: flex; align-items: center; gap: 10px;
-    cursor: pointer; transition: background 0.15s;
-  }
-
-  .menu-recent-item:hover { background: var(--surface2); }
-  .menu-recent-item svg { width: 14px; height: 14px; stroke: var(--text3); fill: none; stroke-width: 1.5; flex-shrink: 0; }
-  .menu-recent-item span { font-size: 12px; color: var(--text2); }
-
-  .menu-footer {
-    display: flex; justify-content: space-between; align-items: center;
-    padding-top: 12px; border-top: 1px solid var(--border);
-  }
-
-  .menu-footer-btn {
-    padding: 6px 10px; border-radius: 7px;
-    background: transparent; border: none;
-    cursor: pointer; font-size: 11px; color: var(--text3);
-    font-family: 'DM Sans', sans-serif;
-    display: flex; align-items: center; gap: 6px;
-    transition: all 0.15s;
-  }
-
-  .menu-footer-btn:hover { background: var(--surface2); color: var(--red); }
-  .menu-footer-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.5; }
-
-  /* ===== WINDOWS ===== */
-  #windows-container { position: absolute; inset: 0; pointer-events: none; }
-
-  .window {
-    position: absolute;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 16px;
-    overflow: hidden;
-    pointer-events: all;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.03);
-    animation: winPop 0.25s cubic-bezier(0.34, 1.4, 0.64, 1);
-  }
-
-  @keyframes winPop {
-    from { transform: scale(0.94); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-
-  .titlebar {
-    height: 44px;
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center;
-    padding: 0 16px;
-    cursor: default;
-    gap: 10px;
-  }
-
-  .titlebar-drag { flex: 1; cursor: move; height: 100%; display: flex; align-items: center; }
-  .titlebar-title { font-size: 13px; font-weight: 500; color: var(--text2); }
-
-  .traffic-lights { display: flex; gap: 6px; }
-
-  .tl {
-    width: 12px; height: 12px; border-radius: 50%;
-    cursor: pointer; position: relative; border: none;
-    transition: filter 0.15s;
-  }
-
-  .tl:hover { filter: brightness(1.2); }
-
-  .tl-close { background: var(--red); }
-  .tl-min { background: var(--yellow); }
-  .tl-max { background: var(--green); }
-
-  .win-content {
-    overflow: auto;
-    background: var(--bg);
-    color: var(--text);
-  }
-
-  /* ===== LIBRARY ===== */
-  .app-container { padding: 28px; height: 100%; display: flex; flex-direction: column; gap: 20px; }
-
-  .app-header { display: flex; justify-content: space-between; align-items: flex-start; }
-
-  .app-title { font-size: 24px; font-weight: 500; letter-spacing: -0.03em; }
-  .app-sub { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 4px; }
-
-  .btn-primary {
-    height: 34px; padding: 0 16px;
-    background: var(--accent); border: none;
-    border-radius: 8px; cursor: pointer;
-    font-size: 12px; font-weight: 500; color: #fff;
-    font-family: 'DM Sans', sans-serif;
-    display: flex; align-items: center; gap: 6px;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-
-  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-glow); }
-  .btn-primary svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2; }
-
-  .btn-ghost {
-    height: 34px; padding: 0 14px;
-    background: var(--surface3); border: 1px solid var(--border);
-    border-radius: 8px; cursor: pointer;
-    font-size: 12px; color: var(--text2);
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
-  }
-
-  .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
-
-  .game-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 12px;
-    overflow-y: auto;
-    flex: 1;
-    padding-right: 4px;
-  }
-
-  .game-grid::-webkit-scrollbar { width: 4px; }
-  .game-grid::-webkit-scrollbar-track { background: transparent; }
-  .game-grid::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
-
-  .game-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    display: flex; flex-direction: column; gap: 10px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .game-card:hover { border-color: var(--border2); background: var(--surface3); transform: translateY(-2px); }
-
-  .game-thumb {
-    height: 90px;
-    background: var(--surface3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-  }
-
-  .game-thumb svg { width: 32px; height: 32px; stroke: var(--text3); fill: none; stroke-width: 1; }
-
-  .game-name { font-size: 13px; font-weight: 500; }
-  .game-type { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
-
-  .game-actions { display: flex; gap: 6px; margin-top: auto; }
-
-  .btn-play {
-    flex: 1; height: 30px;
-    background: var(--surface3);
-    border: 1px solid var(--border2);
-    border-radius: 7px;
-    font-size: 11px; font-weight: 500;
-    color: var(--text2);
-    font-family: 'DM Mono', monospace;
-    cursor: pointer; letter-spacing: 0.05em;
-    transition: all 0.15s;
-  }
-
-  .btn-play:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-  .btn-del {
-    width: 30px; height: 30px;
-    background: transparent; border: 1px solid var(--border);
-    border-radius: 7px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.15s;
-  }
-
-  .btn-del:hover { background: rgba(255,95,87,0.12); border-color: var(--red); }
-  .btn-del svg { width: 12px; height: 12px; stroke: var(--text3); fill: none; stroke-width: 1.5; }
-  .btn-del:hover svg { stroke: var(--red); }
-
-  .empty-state {
-    grid-column: 1/-1;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 60px 20px; gap: 12px;
-  }
-
-  .empty-state svg { width: 40px; height: 40px; stroke: var(--text3); fill: none; stroke-width: 1; }
-  .empty-state p { font-size: 13px; color: var(--text3); text-align: center; line-height: 1.6; }
-
-  /* ===== STORE ===== */
-  .store-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 12px; overflow-y: auto; flex: 1;
-  }
-
-  .store-card {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 12px; padding: 20px;
-    display: flex; flex-direction: column; gap: 12px;
-    transition: all 0.15s;
-  }
-
-  .store-card:hover { border-color: var(--border2); }
-
-  .store-icon {
-    width: 48px; height: 48px; border-radius: 12px;
-    background: var(--surface3); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-  }
-
-  .store-icon svg { width: 24px; height: 24px; stroke: var(--text2); fill: none; stroke-width: 1.5; }
-
-  .store-name { font-size: 14px; font-weight: 500; }
-  .store-tag { font-size: 10px; color: var(--accent2); font-family: 'DM Mono', monospace; }
-  .store-tag.soon { color: var(--text3); }
-
-  .btn-install {
-    height: 30px; width: 100%;
-    background: var(--accent); border: none;
-    border-radius: 7px; cursor: pointer;
-    font-size: 11px; font-weight: 500;
-    font-family: 'DM Mono', monospace;
-    color: #fff; letter-spacing: 0.05em;
-    transition: all 0.15s;
-  }
-
-  .btn-install:hover { background: var(--accent2); }
-  .btn-install:disabled { background: var(--surface3); color: var(--text3); cursor: default; border: 1px solid var(--border); }
-
-  /* ===== SETTINGS ===== */
-  .settings-body { padding: 28px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
-
-  .setting-section-title {
-    font-size: 10px; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--text3);
-    font-family: 'DM Mono', monospace;
-    margin-bottom: 8px;
-  }
-
-  .setting-row {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 14px 16px;
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 12px;
-  }
-
-  .setting-row + .setting-row { margin-top: 4px; }
-  .setting-row-title { font-size: 13px; font-weight: 500; }
-  .setting-row-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
-
-  .setting-val {
-    font-size: 12px; color: var(--text3);
-    font-family: 'DM Mono', monospace;
-    text-align: right; flex-shrink: 0;
-  }
-
-  .setting-swatch {
-    width: 32px; height: 32px; border-radius: 8px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border: 1px solid var(--border2);
-    flex-shrink: 0;
-  }
-
-  .setting-stat {
-    display: flex; gap: 4px;
-    flex-direction: column; align-items: flex-end;
-  }
-
-  .setting-stat-num { font-size: 18px; font-weight: 500; line-height: 1; }
-  .setting-stat-label { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; }
-
-  /* ===== SNAKE ===== */
-  .snake-ui { background: #040408; height: 100%; display: flex; flex-direction: column; padding: 16px; gap: 12px; }
-  .snake-hud { display: flex; justify-content: space-between; align-items: center; }
-  .snake-hud-val { font-family: 'DM Mono', monospace; font-size: 12px; }
-  .snake-hud-label { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; margin-bottom: 2px; }
-  .snake-canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
-  #snake-canvas { border: 1px solid var(--border); border-radius: 8px; }
-  .snake-msg { text-align: center; font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
-
-  /* ===== TTT ===== */
-  .ttt-ui {
-    height: 100%; display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 24px; padding: 28px;
-    background: var(--bg);
-  }
-
-  .ttt-title { font-size: 18px; font-weight: 500; letter-spacing: -0.02em; }
-
-  #ttt-board {
-    display: grid; grid-template-columns: 1fr 1fr 1fr;
-    gap: 4px;
-  }
-
-  .ttt-cell {
-    width: 88px; height: 88px;
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 32px; font-weight: 300;
-    cursor: pointer; transition: all 0.12s;
-    color: var(--text);
-  }
-
-  .ttt-cell:hover:not(.filled) { background: var(--surface3); border-color: var(--border2); }
-  .ttt-cell.filled { cursor: default; }
-  .ttt-cell.x { color: var(--accent2); }
-  .ttt-cell.o { color: var(--text2); }
-
-  #ttt-status { font-size: 13px; color: var(--text2); font-family: 'DM Mono', monospace; }
-
-  .ttt-actions { display: flex; gap: 8px; }
-
-  /* ===== SHUTDOWN ===== */
-  #shutdown-screen {
-    position: fixed; inset: 0; z-index: 999999;
-    background: #000;
-    display: none; flex-direction: column;
-    align-items: center; justify-content: center; gap: 32px;
-  }
-
-  #shutdown-screen.visible { display: flex; }
-
-  .shutdown-text {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px; letter-spacing: 0.2em;
-    color: rgba(255,255,255,0.2);
-    text-transform: uppercase;
-  }
-
-  .restart-btn {
-    padding: 8px 20px; border-radius: 8px;
-    background: var(--surface3); border: 1px solid var(--border2);
-    font-size: 12px; color: var(--text2);
-    font-family: 'DM Mono', monospace; cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .restart-btn:hover { border-color: var(--accent); color: var(--text); }
-
-  /* Scrollbar global */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Unblocked Games</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 10px 0;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            font-weight: 800;
+            background: linear-gradient(90deg, #4a4a4a, #6a6a6a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .games-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .game-card {
+            background: #111;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.6);
+            background: #1a1a1a;
+        }
+        
+        .game-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #444;
+            font-size: 1.2em;
+            text-align: center;
+        }
+        
+        .game-content {
+            padding: 15px;
+        }
+        
+        .game-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #f5f5f5;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .game-desc {
+            color: #aaa;
+            font-size: 0.9em;
+            line-height: 1.3;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .game-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #4a4a4a, #6a6a6a);
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95em;
+            transition: all 0.2s;
+            border: 1px solid #4a4a4a;
+        }
+        
+        .game-link:hover {
+            background: #555;
+            transform: scale(1.02);
+            border-color: #555;
+        }
+        
+        .game-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 5px;
+            font-size: 0.8em;
+            color: #777;
+        }
+        
+        .game-meta {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .game-type {
+            background: #2a2a2a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7em;
+        }
+        
+        .game-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #222;
+            color: #4a4a4a;
+            font-size: 0.8em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+    </style>
 </head>
 <body>
-
-<!-- SHUTDOWN -->
-<div id="shutdown-screen">
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="16" cy="16" r="10" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
-    <path d="M16 8v8" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M10.3 10.3a9 9 0 1 0 11.4 0" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-linecap="round"/>
-  </svg>
-  <p class="shutdown-text">System offline</p>
-  <button class="restart-btn" onclick="location.reload()">Restart</button>
-</div>
-
-<!-- STARTUP -->
-<div id="startup">
-  <div class="startup-logo">
-    <div class="startup-glyph">
-      <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="36" cy="36" r="28" stroke="rgba(108,99,255,0.3)" stroke-width="1"/>
-        <circle cx="36" cy="36" r="20" stroke="rgba(108,99,255,0.5)" stroke-width="1"/>
-        <circle cx="36" cy="36" r="4" fill="#6c63ff"/>
-        <circle cx="36" cy="36" r="4" fill="#6c63ff" opacity="0.5">
-          <animate attributeName="r" values="4;16;4" dur="2s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite"/>
-        </circle>
-        <line x1="36" y1="8" x2="36" y2="16" stroke="#6c63ff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        <line x1="36" y1="56" x2="36" y2="64" stroke="#6c63ff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        <line x1="8" y1="36" x2="16" y2="36" stroke="#6c63ff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        <line x1="56" y1="36" x2="64" y2="36" stroke="#6c63ff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-      </svg>
+    <div class="container">
+        <header>
+            <h1>Dark Unblocked Games</h1>
+        </header>
+        
+        <div id="games-container"></div>
     </div>
-    <p class="startup-wordmark">AstraOS</p>
-  </div>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-    <div class="startup-bar-wrap"><div class="startup-bar"></div></div>
-    <p class="startup-status">Initializing environment...</p>
-  </div>
-</div>
 
-<!-- DESKTOP -->
-<div id="desktop">
-  <div class="desktop-bg"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gamesContainer = document.getElementById('games-container');
+            
+            // Your games go here (add new games by appending to this array)
+            const games = [
+                {
+                    id: "game1",
+                    title: "Space Invaders",
+                    desc: "Classic arcade shooter from 1978",
+                    img: "games/space-invaders.png",
+                    url: "games/space-invaders.html",
+                    type: "arcade",
+                    badge: "unblocked"
+                },
+                // ADD NEW GAMES HERE (see instructions below)
+            ];
 
-  <!-- Icons -->
-  <div class="desktop-icons">
-    <div class="desk-icon" onclick="openApp('library')">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span class="desk-icon-label">Library</span>
-    </div>
-    <div class="desk-icon" onclick="openApp('store')">
-      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-      <span class="desk-icon-label">Store</span>
-    </div>
-    <div class="desk-icon" onclick="openApp('settings')">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-      <span class="desk-icon-label">Settings</span>
-    </div>
-  </div>
-
-  <!-- Windows -->
-  <div id="windows-container"></div>
-</div>
-
-<!-- TASKBAR -->
-<div id="taskbar">
-  <div class="start-btn" onclick="toggleStartMenu()">
-    <div class="start-btn-dot"></div>
-    ASTRAOS
-  </div>
-  <div class="taskbar-sep"></div>
-  <div class="tb-quick" onclick="openApp('library')" title="Library">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-  </div>
-  <div class="tb-quick" onclick="openApp('store')" title="Store">
-    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-  </div>
-  <div class="tb-quick" onclick="openApp('settings')" title="Settings">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-  </div>
-  <div class="tb-spacer"></div>
-  <div class="tb-tray">
-    <span>UNBLOCKED</span>
-    <div class="taskbar-sep"></div>
-    <span class="tb-clock" id="clock">--:--</span>
-    <div class="tb-user">
-      <div class="tb-avatar">S</div>
-      <span style="font-size:11px;color:var(--text2);">Synth</span>
-    </div>
-  </div>
-</div>
-
-<!-- START MENU -->
-<div id="start-menu">
-  <div class="menu-header">
-    <div class="menu-logo-mark">
-      <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="9" cy="9" r="7" stroke="rgba(108,99,255,0.6)" stroke-width="1"/>
-        <circle cx="9" cy="9" r="1.5" fill="#6c63ff"/>
-        <line x1="9" y1="2" x2="9" y2="4" stroke="#6c63ff" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
-        <line x1="9" y1="14" x2="9" y2="16" stroke="#6c63ff" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
-        <line x1="2" y1="9" x2="4" y2="9" stroke="#6c63ff" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
-        <line x1="14" y1="9" x2="16" y2="9" stroke="#6c63ff" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
-      </svg>
-    </div>
-    <div>
-      <div class="menu-title">AstraOS</div>
-      <div class="menu-sub">v1.0 — Purple Edition</div>
-    </div>
-  </div>
-  <div class="menu-apps">
-    <div class="menu-app" onclick="openApp('library');closeStartMenu()">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span>Library</span>
-    </div>
-    <div class="menu-app" onclick="openApp('store');closeStartMenu()">
-      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-      <span>Store</span>
-    </div>
-    <div class="menu-app" onclick="openApp('settings');closeStartMenu()">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-      <span>Settings</span>
-    </div>
-  </div>
-  <div class="menu-label">Recent</div>
-  <div class="menu-recent" id="start-recent"></div>
-  <div class="menu-footer">
-    <button class="menu-footer-btn" onclick="shutdown()">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><path d="M9.4 9.4a6 6 0 100 5.2"/></svg>
-      Power off
-    </button>
-    <span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;">UNBLOCKED GAMES</span>
-  </div>
-</div>
-
-<script>
-let currentZ = 100
-let games = []
-let openWindows = []
-let startMenuOpen = false
-
-// ===== STARTUP =====
-window.onload = function() {
-  loadGames()
-  updateClock()
-  setTimeout(() => {
-    const startup = document.getElementById('startup')
-    startup.classList.add('fade-out')
-    setTimeout(() => {
-      startup.style.display = 'none'
-      document.getElementById('desktop').classList.add('visible')
-    }, 600)
-  }, 2600)
-}
-
-// ===== GAMES DATA =====
-function loadGames() {
-  const saved = localStorage.getItem('astraOS_games_v2')
-  if (saved) {
-    games = JSON.parse(saved)
-  } else {
-    games = [
-      { id: 1, name: 'Snake', type: 'built-in' },
-      { id: 2, name: 'Tic Tac Toe', type: 'built-in' }
-    ]
-    saveGames()
-  }
-}
-
-function saveGames() {
-  localStorage.setItem('astraOS_games_v2', JSON.stringify(games))
-}
-
-// ===== WINDOW SYSTEM =====
-function createWindow(title, contentHTML, width=820, height=560, onReady=null) {
-  const container = document.getElementById('windows-container')
-  const win = document.createElement('div')
-  win.className = 'window'
-  win.style.cssText = `width:${typeof width==='string'?width:width+'px'};height:${typeof height==='string'?height:height+'px'};left:${Math.random()*200+160}px;top:${Math.random()*100+60}px;z-index:${++currentZ}`
-
-  const iconSVG = title.includes('Library') 
-    ? `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text3);fill:none;stroke-width:1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`
-    : title.includes('Store')
-    ? `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text3);fill:none;stroke-width:1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>`
-    : title.includes('Settings')
-    ? `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text3);fill:none;stroke-width:1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`
-    : `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text3);fill:none;stroke-width:1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>`
-
-  win.innerHTML = `
-    <div class="titlebar" onmousedown="startDrag(event, this.parentElement)">
-      <div class="traffic-lights">
-        <button class="tl tl-close" onclick="closeWindow(this)"></button>
-        <button class="tl tl-min" onclick="minimizeWindow(this)"></button>
-        <button class="tl tl-max" onclick="maximizeWindow(this)"></button>
-      </div>
-      <div class="titlebar-drag">
-        <div style="display:flex;align-items:center;gap:6px;margin-left:10px;">
-          ${iconSVG}
-          <span class="titlebar-title">${title}</span>
-        </div>
-      </div>
-    </div>
-    <div class="win-content" style="height:calc(100% - 44px);">${contentHTML}</div>`
-
-  container.appendChild(win)
-  openWindows.push(win)
-  win.addEventListener('mousedown', () => win.style.zIndex = ++currentZ)
-  if (onReady) setTimeout(() => onReady(win), 10)
-  return win
-}
-
-// Drag
-let dragged=null, dragOX=0, dragOY=0
-function startDrag(e, win) {
-  if (e.target.tagName === 'BUTTON') return
-  dragged=win; dragOX=e.clientX-win.offsetLeft; dragOY=e.clientY-win.offsetTop
-  win.style.zIndex = ++currentZ
-  document.addEventListener('mousemove', onDrag)
-  document.addEventListener('mouseup', stopDrag)
-}
-function onDrag(e) {
-  if (!dragged) return
-  dragged.style.left = (e.clientX-dragOX)+'px'
-  dragged.style.top = (e.clientY-dragOY)+'px'
-}
-function stopDrag() { dragged=null; document.removeEventListener('mousemove',onDrag); document.removeEventListener('mouseup',stopDrag) }
-
-function closeWindow(btn) {
-  const win = btn.closest('.window')
-  win.style.transition = 'transform 0.2s ease, opacity 0.2s ease'
-  win.style.transform = 'scale(0.92)'; win.style.opacity = '0'
-  setTimeout(() => { win.remove(); openWindows = openWindows.filter(w=>w!==win) }, 200)
-}
-
-function minimizeWindow(btn) {
-  btn.closest('.window').style.display = 'none'
-}
-
-function maximizeWindow(btn) {
-  const win = btn.closest('.window')
-  if (win._maximized) {
-    win.style.cssText = win._prevStyle
-    win._maximized = false
-  } else {
-    win._prevStyle = win.style.cssText
-    win.style.left = '0'; win.style.top = '0'
-    win.style.width = '100vw'; win.style.height = 'calc(100vh - 44px)'
-    win.style.borderRadius = '0'
-    win._maximized = true
-  }
-}
-
-// ===== APPS =====
-function openApp(app) {
-  if (app==='library') openLibrary()
-  else if (app==='store') openStore()
-  else if (app==='settings') openSettings()
-}
-
-function openLibrary() {
-  const content = `
-  <div class="app-container">
-    <div class="app-header">
-      <div>
-        <div class="app-title">Library</div>
-        <div class="app-sub" id="lib-count">— titles</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-primary" onclick="addGameFile()">
-          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Game
-        </button>
-      </div>
-    </div>
-    <div class="game-grid" id="library-grid"></div>
-  </div>`
-  createWindow('Game Library', content, 960, 600, renderLibrary)
-}
-
-function renderLibrary(winEl) {
-  const grid = winEl.querySelector('#library-grid')
-  const count = winEl.querySelector('#lib-count')
-  if (count) count.textContent = `${games.length} title${games.length!==1?'s':''}`
-  grid.innerHTML = ''
-
-  if (games.length === 0) {
-    grid.innerHTML = `
-    <div class="empty-state">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <p>No games in library.<br>Add an HTML game file to get started.</p>
-    </div>`
-    return
-  }
-
-  games.forEach(game => {
-    const card = document.createElement('div')
-    card.className = 'game-card'
-    card.innerHTML = `
-      <div class="game-thumb">
-        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-      </div>
-      <div class="game-name">${game.name}</div>
-      <div class="game-type">${game.type==='built-in'?'BUILT-IN':'UPLOADED HTML'}</div>
-      <div class="game-actions">
-        <button class="btn-play" onclick="playGame(${game.id})">PLAY</button>
-        ${game.type==='uploaded'?`<button class="btn-del" onclick="deleteGame(${game.id},event)"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>`:''}
-      </div>`
-    grid.appendChild(card)
-  })
-}
-
-function refreshLibraries() {
-  document.querySelectorAll('.window').forEach(w => {
-    if (w.querySelector('#library-grid')) renderLibrary(w)
-  })
-}
-
-function playGame(id) {
-  const game = games.find(g=>g.id===id)
-  if (!game) return
-  if (game.type==='built-in') {
-    if (game.name==='Snake') openSnakeGame()
-    else if (game.name==='Tic Tac Toe') openTicTacToeGame()
-    else alert('This demo game is not yet playable. Install a real .html file.')
-  } else if (game.htmlContent) {
-    const blob = new Blob([game.htmlContent], {type:'text/html;charset=utf-8'})
-    const url = URL.createObjectURL(blob)
-    const html = `
-    <div style="display:flex;flex-direction:column;height:100%;background:#000;">
-      <div style="background:var(--surface2);border-bottom:1px solid var(--border);padding:6px 12px;display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;">${game.name}</span>
-        <button onclick="this.closest('.window').querySelector('iframe').src=this.closest('.window').querySelector('iframe').src" style="font-size:10px;padding:2px 8px;background:var(--surface3);border:1px solid var(--border);border-radius:5px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;">Reload</button>
-      </div>
-      <iframe src="${url}" style="flex:1;width:100%;border:none;"></iframe>
-    </div>`
-    createWindow(game.name, html, '90%', '86%')
-  }
-}
-
-function addGameFile() {
-  const input = document.createElement('input')
-  input.type = 'file'; input.accept = '.html'
-  input.onchange = e => {
-    const file = e.target.files[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = ev => {
-      games.push({ id: Date.now(), name: file.name.replace('.html',''), type: 'uploaded', htmlContent: ev.target.result })
-      saveGames(); refreshLibraries()
-    }
-    reader.readAsText(file)
-  }
-  input.click()
-}
-
-function deleteGame(id, e) {
-  if (e) e.stopPropagation()
-  games = games.filter(g=>g.id!==id)
-  saveGames(); refreshLibraries()
-}
-
-// ===== STORE =====
-function openStore() {
-  const content = `
-  <div class="app-container">
-    <div class="app-header">
-      <div>
-        <div class="app-title">Store</div>
-        <div class="app-sub">Free HTML5 games — instant install</div>
-      </div>
-    </div>
-    <div class="store-grid">
-      <div class="store-card">
-        <div class="store-icon">
-          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-        </div>
-        <div class="store-name">Flappy Astra</div>
-        <div class="store-tag">NEW RELEASE</div>
-        <button class="btn-install" onclick="installDemoGame('Flappy Astra')">Install Free</button>
-      </div>
-      <div class="store-card">
-        <div class="store-icon">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-        </div>
-        <div class="store-name">Purple Runner</div>
-        <div class="store-tag">ENDLESS RUNNER</div>
-        <button class="btn-install" onclick="installDemoGame('Purple Runner')">Install Free</button>
-      </div>
-      <div class="store-card">
-        <div class="store-icon">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
-        </div>
-        <div class="store-name">Astra Pong</div>
-        <div class="store-tag">2-PLAYER CLASSIC</div>
-        <button class="btn-install" onclick="installDemoGame('Astra Pong')">Install Free</button>
-      </div>
-      <div class="store-card" style="opacity:0.45;">
-        <div class="store-icon">
-          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-        </div>
-        <div class="store-name">Astra Invaders</div>
-        <div class="store-tag soon">COMING SOON</div>
-        <button class="btn-install" disabled>Coming Soon</button>
-      </div>
-    </div>
-  </div>`
-  createWindow('Game Store', content, 900, 560)
-}
-
-function installDemoGame(name) {
-  if (games.find(g=>g.name===name)) { alert(`${name} is already installed.`); return }
-  games.push({ id: Date.now(), name, type: 'built-in' })
-  saveGames(); refreshLibraries()
-  alert(`${name} installed. Find it in your Library.`)
-}
-
-// ===== SETTINGS =====
-function openSettings() {
-  const content = `
-  <div class="settings-body">
-    <div>
-      <div class="setting-section-title">Appearance</div>
-      <div class="setting-row">
-        <div>
-          <div class="setting-row-title">Theme</div>
-          <div class="setting-row-sub">Dark — Indigo accent</div>
-        </div>
-        <div class="setting-swatch"></div>
-      </div>
-      <div class="setting-row">
-        <div>
-          <div class="setting-row-title">Typeface</div>
-          <div class="setting-row-sub">DM Sans / DM Mono</div>
-        </div>
-        <div class="setting-val">System</div>
-      </div>
-    </div>
-    <div>
-      <div class="setting-section-title">System</div>
-      <div class="setting-row">
-        <div>
-          <div class="setting-row-title">OS Version</div>
-          <div class="setting-row-sub">AstraOS Unblocked Games</div>
-        </div>
-        <div class="setting-val">1.0.0</div>
-      </div>
-      <div class="setting-row">
-        <div>
-          <div class="setting-row-title">Game Library</div>
-          <div class="setting-row-sub">Stored in browser localStorage</div>
-        </div>
-        <div class="setting-stat">
-          <div class="setting-stat-num">${games.length}</div>
-          <div class="setting-stat-label">games</div>
-        </div>
-      </div>
-      <div class="setting-row">
-        <div>
-          <div class="setting-row-title">Network</div>
-          <div class="setting-row-sub">All games run client-side</div>
-        </div>
-        <div class="setting-val" style="color:var(--green);">Unblocked</div>
-      </div>
-    </div>
-    <div>
-      <div class="setting-section-title">About</div>
-      <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
-        <div class="setting-row-title">AstraOS</div>
-        <div style="font-size:12px;color:var(--text3);line-height:1.7;">
-          A single-file desktop OS interface for unblocked HTML5 games. 
-          Upload any self-contained .html game file — it is stored locally in your browser 
-          and runs fully client-side. No external requests, no tracking.
-        </div>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn-ghost" onclick="localStorage.clear();location.reload()">Clear All Data</button>
-    </div>
-  </div>`
-  createWindow('Settings', content, 680, 560)
-}
-
-// ===== SNAKE =====
-function openSnakeGame() {
-  const content = `
-  <div class="snake-ui">
-    <div class="snake-hud">
-      <div><div class="snake-hud-label">Score</div><div class="snake-hud-val" id="snake-score">000</div></div>
-      <div style="text-align:center;"><div class="snake-hud-label">Controls</div><div class="snake-hud-val" style="font-size:10px;color:var(--text3)">W A S D</div></div>
-      <div style="text-align:right;"><div class="snake-hud-label">Best</div><div class="snake-hud-val" id="snake-high">000</div></div>
-    </div>
-    <div class="snake-canvas-wrap">
-      <canvas id="snake-canvas" width="520" height="420"></canvas>
-    </div>
-    <div class="snake-msg" id="snake-status">Press WASD or arrow keys to begin</div>
-  </div>`
-  createWindow('Snake', content, 600, 580, initSnake)
-}
-
-function initSnake(win) {
-  const canvas = win.querySelector('#snake-canvas')
-  const ctx = canvas.getContext('2d')
-  const scoreEl = win.querySelector('#snake-score')
-  const highEl = win.querySelector('#snake-high')
-  const statusEl = win.querySelector('#snake-status')
-
-  const GS = 20, COLS = 26, ROWS = 21
-  let snake=[{x:13,y:10}], food={x:6,y:6}, dx=1, dy=0, score=0, interval=null, speed=130
-
-  function draw() {
-    ctx.fillStyle = '#04040a'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    // Grid
-    ctx.strokeStyle = 'rgba(255,255,255,0.02)'
-    for(let x=0;x<COLS;x++) { ctx.beginPath(); ctx.moveTo(x*GS,0); ctx.lineTo(x*GS,ROWS*GS); ctx.stroke() }
-    for(let y=0;y<ROWS;y++) { ctx.beginPath(); ctx.moveTo(0,y*GS); ctx.lineTo(COLS*GS,y*GS); ctx.stroke() }
-    // Snake body
-    snake.forEach((s,i) => {
-      ctx.fillStyle = i===0 ? '#6c63ff' : `rgba(108,99,255,${Math.max(0.2, 1-i/snake.length)})`
-      ctx.beginPath()
-      ctx.roundRect(s.x*GS+1, s.y*GS+1, GS-2, GS-2, 3)
-      ctx.fill()
-    })
-    // Food
-    ctx.fillStyle = '#28c840'
-    ctx.beginPath()
-    ctx.roundRect(food.x*GS+2, food.y*GS+2, GS-4, GS-4, 3)
-    ctx.fill()
-  }
-
-  function move() {
-    const head = {x:snake[0].x+dx, y:snake[0].y+dy}
-    if(head.x<0||head.x>=COLS||head.y<0||head.y>=ROWS) return end()
-    if(snake.some(s=>s.x===head.x&&s.y===head.y)) return end()
-    snake.unshift(head)
-    if(head.x===food.x&&head.y===food.y) {
-      score+=10; scoreEl.textContent=String(score).padStart(3,'0')
-      if(score>parseInt(highEl.textContent)) highEl.textContent=String(score).padStart(3,'0')
-      food={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)}
-      if(speed>60){speed-=3;clearInterval(interval);interval=setInterval(move,speed)}
-    } else snake.pop()
-    draw()
-  }
-
-  function end() {
-    clearInterval(interval); interval=null
-    statusEl.innerHTML = `Game over — Score: ${score} — <span style="cursor:pointer;color:var(--accent)" onclick="this.closest('.window').remove();openSnakeGame()">Play again</span>`
-  }
-
-  const keys = e => {
-    if(['ArrowLeft','a','A'].includes(e.key)&&dx!==1){dx=-1;dy=0}
-    else if(['ArrowRight','d','D'].includes(e.key)&&dx!==-1){dx=1;dy=0}
-    else if(['ArrowUp','w','W'].includes(e.key)&&dy!==1){dx=0;dy=-1}
-    else if(['ArrowDown','s','S'].includes(e.key)&&dy!==-1){dx=0;dy=1}
-    if(!interval){interval=setInterval(move,speed);statusEl.textContent=''}
-  }
-  document.addEventListener('keydown', keys)
-
-  const obs = new MutationObserver(()=>{ if(!document.body.contains(win)){document.removeEventListener('keydown',keys);clearInterval(interval);obs.disconnect()} })
-  obs.observe(document.body, {childList:true,subtree:true})
-  draw()
-}
-
-// ===== TIC TAC TOE =====
-function openTicTacToeGame() {
-  const content = `
-  <div class="ttt-ui">
-    <div class="ttt-title">Tic Tac Toe</div>
-    <div id="ttt-board"></div>
-    <div id="ttt-status" style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;">X to move</div>
-    <div class="ttt-actions">
-      <button class="btn-ghost" id="ttt-reset">Reset</button>
-      <button class="btn-ghost" onclick="closeWindow(this)">Close</button>
-    </div>
-  </div>`
-  createWindow('Tic Tac Toe', content, 440, 520, initTicTacToe)
-}
-
-function initTicTacToe(win) {
-  let board = Array(9).fill(null), cur = 'X'
-  const boardEl = win.querySelector('#ttt-board')
-  const statusEl = win.querySelector('#ttt-status')
-
-  function render() {
-    boardEl.innerHTML = ''
-    for(let i=0;i<9;i++) {
-      const cell = document.createElement('div')
-      cell.className = `ttt-cell${board[i]?' filled '+board[i].toLowerCase():''}`
-      cell.textContent = board[i]||''
-      cell.onclick = () => move(i)
-      boardEl.appendChild(cell)
-    }
-  }
-
-  function move(i) {
-    if(board[i]||winner()) return
-    board[i]=cur; render()
-    const w=winner()
-    if(w){statusEl.textContent=`${w} wins`;return}
-    if(board.every(c=>c)){statusEl.textContent='Draw';return}
-    cur=cur==='X'?'O':'X'; statusEl.textContent=`${cur} to move`
-  }
-
-  function winner() {
-    const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
-    for(const [a,b,c] of wins) if(board[a]&&board[a]===board[b]&&board[a]===board[c]) return board[a]
-    return null
-  }
-
-  win.querySelector('#ttt-reset').onclick = () => { board=Array(9).fill(null); cur='X'; statusEl.textContent='X to move'; render() }
-  render()
-}
-
-// ===== CLOCK =====
-function updateClock() {
-  const el = document.getElementById('clock')
-  const tick = () => { el.textContent = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) }
-  tick(); setInterval(tick, 1000)
-}
-
-// ===== START MENU =====
-function toggleStartMenu() {
-  const menu = document.getElementById('start-menu')
-  startMenuOpen = !startMenuOpen
-  menu.style.display = startMenuOpen ? 'flex' : 'none'
-  if(startMenuOpen) populateStartRecent()
-}
-
-function closeStartMenu() {
-  document.getElementById('start-menu').style.display='none'
-  startMenuOpen = false
-}
-
-function populateStartRecent() {
-  const container = document.getElementById('start-recent')
-  container.innerHTML = games.slice(0,4).map(g => `
-    <div class="menu-recent-item" onclick="playGame(${g.id});closeStartMenu()">
-      <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-      <span>${g.name}</span>
-    </div>`).join('')
-  if(!games.length) container.innerHTML = `<div style="padding:8px 10px;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;">No games installed</div>`
-}
-
-document.addEventListener('click', e => {
-  const menu = document.getElementById('start-menu')
-  const btn = document.querySelector('.start-btn')
-  if(startMenuOpen && !menu.contains(e.target) && !btn.contains(e.target)) closeStartMenu()
-})
-
-// ===== SHUTDOWN =====
-function shutdown() {
-  const s = document.getElementById('shutdown-screen')
-  s.classList.add('visible')
-}
-</script>
+            // Render games in the container
+            games.forEach(game => {
+                const gameCard = document.createElement('div');
+                gameCard.className = 'game-card';
+                
+                // Check if image exists
+                const hasImage = game.img.includes('games/');
+                const imgSrc = hasImage ? game.img : 'games/space-invaders.png';
+                
+                gameCard.innerHTML = `
+                    <div class="game-image" style="background-image: url(${imgSrc})"></div>
+                    <div class="game-content">
+                        <h3 class="game-title">${game.title}</h3>
+                        <p class="game-desc">${game.desc}</p>
+                        <a href="${game.url}" class="game-link" target="_blank">Play Now</a>
+                        <div class="game-footer">
+                            <div class="game-meta">
+                                <span class="game-type">${game.type}</span>
+                                <span class="game-badge">${game.badge}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                gamesContainer.appendChild(gameCard);
+            });
+        });
+    </script>
 </body>
 </html>
